@@ -41,10 +41,11 @@ Say "  folder    $Home_"
 #    When install.cmd downloaded this file it lands in $Home_ itself, so the
 #    "copy" would be the destination copying onto itself. Compare full paths
 #    and always fetch a fresh agent in that case.
-$Local = Join-Path $PSScriptRoot 'mouse_mover.ps1'
-$sameFile = [IO.Path]::GetFullPath($Local) -ieq [IO.Path]::GetFullPath($Agent)
+#    $PSScriptRoot is empty when this is run as `irm ... | iex`, so guard it.
+$Local = if ($PSScriptRoot) { Join-Path $PSScriptRoot 'mouse_mover.ps1' } else { $null }
+$sameFile = $Local -and ([IO.Path]::GetFullPath($Local) -ieq [IO.Path]::GetFullPath($Agent))
 
-if ((Test-Path $Local) -and -not $sameFile) {
+if ($Local -and (Test-Path $Local) -and -not $sameFile) {
     Copy-Item $Local $Agent -Force
     Say "  agent     copied from $Local"
 } else {
@@ -80,8 +81,12 @@ Start-Process wscript.exe -ArgumentList "`"$Vbs`"" -WindowStyle Hidden
 Start-Sleep -Seconds 3
 
 # 6. Prove it works ------------------------------------------------------------
+#    No `exit` here: when this runs as `irm ... | iex` an exit would close the
+#    user's whole PowerShell window. Set $LASTEXITCODE-ish state and return.
+$ok = $false
 try {
     $ping = (Invoke-WebRequest 'http://127.0.0.1:8777/ping' -UseBasicParsing -TimeoutSec 6).Content
+    $ok = $true
     Say ""
     Say "  running   $ping" 'Green'
     Say ""
@@ -89,7 +94,6 @@ try {
     if (-not $NoStartup) {
         Say "It will be running again automatically after every restart."
     }
-    exit 0
 } catch {
     Say ""
     Say "  The agent did not answer on port 8777." 'Red'
@@ -97,5 +101,6 @@ try {
     Say ""
     Say "  Try running the agent directly to see the error:"
     Say "    powershell -ExecutionPolicy Bypass -File `"$Agent`""
-    exit 1
 }
+
+$global:LASTEXITCODE = if ($ok) { 0 } else { 1 }
