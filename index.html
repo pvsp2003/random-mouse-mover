@@ -49,14 +49,18 @@
       </li>
       <li>
         <span class="step-n">3</span>
-        <div>Come back and press the button. <span class="muted">Ctrl+C in the terminal stops it.</span></div>
+        <div>The agent opens its own page automatically. Press the button there,
+          or come back here and press the one above — either drives your real cursor.
+          <span class="muted">Ctrl+C in the terminal stops it.</span></div>
       </li>
     </ol>
 
     <p class="fineprint">
       The agent listens on <code>127.0.0.1</code> only, so nothing outside your machine can
-      reach it. On Safari, use <a href="http://127.0.0.1:8777/">http://127.0.0.1:8777/</a>
-      instead of this page — Safari blocks HTTPS pages from talking to localhost.
+      reach it. If the button here still does nothing while the agent is running, your browser is
+      refusing to let an HTTPS page reach localhost — use
+      <a href="http://127.0.0.1:8777/">http://127.0.0.1:8777/</a> instead, which the agent
+      serves itself and no browser blocks.
       <span id="mac-note" hidden>macOS will ask for Accessibility permission on the first hop;
       grant it to the app you launched the agent from.</span>
     </p>

@@ -46,7 +46,12 @@ powershell -ExecutionPolicy Bypass -File mouse_mover.ps1
 python3 mouse_mover.py
 ```
 
-**3. Press the button** at <https://pvsp2003.github.io/random-mouse-mover/>.
+On Windows you can also just double-click [`start_agent.cmd`](scripts/start_agent.cmd)
+if it sits next to `mouse_mover.ps1`.
+
+**3. Press the button.** The agent opens its own page at <http://127.0.0.1:8777/>
+when it starts; the live site at <https://pvsp2003.github.io/random-mouse-mover/>
+works too.
 Your cursor starts hopping to random points up to half a screen away, eased in
 and out so it looks hand-driven, clamped to the screen edges. Press again to
 stop, or <kbd>Ctrl</kbd>+<kbd>C</kbd> the agent.
@@ -71,14 +76,17 @@ powershell -ExecutionPolicy Bypass -File mouse_mover.ps1 -Solo -IntervalSeconds 
 | `--jump` | `-Jump` | `0.5` | Max hop as a fraction of the screen — `0.5` is half a screen |
 | `--steps` | `-Steps` | `40` | Interpolation steps per hop; higher is smoother |
 | `--solo` | `-Solo` | off | No browser; hop on a timer |
+| `--no-open` | `-NoOpen` | off | Do not auto-open the local page on start |
 | `--interval` | `-IntervalSeconds` | `3` | `--solo` only: seconds between hops |
 | `--once` | — | — | `--solo` only: hop once and exit |
 
 ## Browser notes
 
-**Safari** blocks HTTPS pages from talking to `localhost`, so the live site's
-button won't reach the agent there. The agent serves its own copy of the page —
-open <http://127.0.0.1:8777/> instead and it works in any browser, offline.
+**If the live site's button does nothing** while the agent is running, your browser
+is refusing to let an HTTPS page reach `localhost` — Safari always does this, and
+Chrome/Edge increasingly gate it behind a permission. The agent serves its own
+copy of the page for exactly this reason: open <http://127.0.0.1:8777/> and the
+same button works in any browser, offline.
 
 **Chrome / Edge** send a Private Network Access preflight for
 `https://…` → `127.0.0.1`. The agent answers it with
@@ -105,6 +113,7 @@ app.js                talks to the agent; shows setup steps only when it's missi
 scripts/
   mouse_mover.ps1     Windows agent, dependency-free
   mouse_mover.py      macOS / Linux / Windows agent, dependency-free on macOS and Windows
+  start_agent.cmd     Windows: double-click launcher for mouse_mover.ps1
 ```
 
 ## Local preview

@@ -27,6 +27,7 @@ param(
     [double]$Jump            = 0.5,   # max hop as a fraction of screen size
     [int]$Steps              = 40,    # interpolation steps (higher = smoother)
     [switch]$Solo,                    # skip the browser, hop on a timer
+    [switch]$NoOpen,                  # do not auto-open the local page
     [double]$IntervalSeconds = 3.0    # -Solo only: seconds between hops
 )
 
@@ -136,6 +137,12 @@ Write-Host "  Open  https://pvsp2003.github.io/random-mouse-mover/   and press t
 Write-Host "  or    http://127.0.0.1:$Port/"
 Write-Host ""
 Write-Host "Ctrl+C to stop."
+
+if (-not $NoOpen) {
+    # Open the agent's own same-origin page: no CORS, no mixed content, works
+    # in every browser including Safari.
+    Start-Process "http://127.0.0.1:$Port/"
+}
 
 function Write-Body($response, [int]$code, [string]$body, [string]$type) {
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($body)

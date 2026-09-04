@@ -31,6 +31,7 @@ import platform
 import random
 import sys
 import time
+import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 SYSTEM = platform.system()
@@ -331,7 +332,7 @@ def make_handler(mouse, jump, steps):
     return Handler
 
 
-def serve(mouse, port, jump, steps):
+def serve(mouse, port, jump, steps, open_browser=True):
     server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(mouse, jump, steps))
     print("Random Mouse Mover agent - {}, screen {}x{}".format(
         SYSTEM, mouse.width, mouse.height))
@@ -341,6 +342,12 @@ def serve(mouse, port, jump, steps):
     print("  or    http://127.0.0.1:{}/".format(port))
     print("")
     print("Ctrl+C to stop.")
+
+    if open_browser:
+        # The agent's own same-origin page: no CORS, no mixed content, works in
+        # every browser including Safari.
+        webbrowser.open("http://127.0.0.1:{}/".format(port))
+
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -376,6 +383,7 @@ def main():
                         help="max hop as a fraction of the screen (default: 0.5 = half a screen)")
     parser.add_argument("--steps", type=int, default=40,
                         help="interpolation steps per hop; higher is smoother (default: 40)")
+    parser.add_argument("--no-open", action="store_true", help="do not auto-open the local page")
     parser.add_argument("--once", action="store_true", help="--solo only: hop once and exit")
     args = parser.parse_args()
 
@@ -383,7 +391,7 @@ def main():
     if args.solo:
         solo(mouse, args.interval, args.jump, args.steps, args.once)
     else:
-        serve(mouse, args.port, args.jump, args.steps)
+        serve(mouse, args.port, args.jump, args.steps, not args.no_open)
 
 
 if __name__ == "__main__":
