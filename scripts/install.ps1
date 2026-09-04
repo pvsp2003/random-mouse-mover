@@ -37,8 +37,14 @@ Say "  folder    $Home_"
 
 # 2. The agent itself. Prefer a copy sitting next to this script, so the
 #    installer works offline from a clone; otherwise pull it from the site.
+#
+#    When install.cmd downloaded this file it lands in $Home_ itself, so the
+#    "copy" would be the destination copying onto itself. Compare full paths
+#    and always fetch a fresh agent in that case.
 $Local = Join-Path $PSScriptRoot 'mouse_mover.ps1'
-if (Test-Path $Local) {
+$sameFile = [IO.Path]::GetFullPath($Local) -ieq [IO.Path]::GetFullPath($Agent)
+
+if ((Test-Path $Local) -and -not $sameFile) {
     Copy-Item $Local $Agent -Force
     Say "  agent     copied from $Local"
 } else {
