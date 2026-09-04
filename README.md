@@ -2,7 +2,7 @@
 
 One button. The pointer goes somewhere else.
 
-**Live site:** _(GitHub Pages URL goes here once Pages is enabled)_
+**Live site:** <https://pvsp2003.github.io/random-mouse-mover/>
 
 ## What this is
 
