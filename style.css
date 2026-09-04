@@ -146,6 +146,32 @@ body[data-os="windows"] .win { display: block; }
 body[data-os="macos"] .mac { display: block; }
 body[data-os="linux"] .mac { display: block; }
 
+.cmd-row { display: flex; gap: 8px; align-items: stretch; margin: 10px 0 12px; }
+.cmd-row code {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  background: #080a10;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  overflow-x: auto;
+  white-space: nowrap;
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: #a7d0ff;
+}
+.copy {
+  flex: none;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  font: 550 12.5px inherit;
+  cursor: pointer;
+}
+.copy:hover { border-color: #3d445f; background: #161b27; }
+.setup-note strong { color: var(--ink); font-weight: 600; }
+
 /* --- fullscreen stage --------------------------------------------------- */
 
 #stage {

@@ -276,5 +276,27 @@
   });
   window.addEventListener('focus', function () { if (!running) probe(); });
 
+  var macCopy = document.getElementById('maccopy');
+  if (macCopy) {
+    macCopy.addEventListener('click', function () {
+      var text = document.getElementById('maccmd').textContent;
+      var done = function () {
+        macCopy.textContent = 'Copied';
+        setTimeout(function () { macCopy.textContent = 'Copy'; }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, done);
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch (e) { /* nothing else to try */ }
+        ta.remove();
+        done();
+      }
+    });
+  }
+
   probe();
 })();

@@ -52,9 +52,35 @@ python3 mouse_mover.py --solo --interval 10 --jump 0.25
 powershell -ExecutionPolicy Bypass -File mouse_mover.ps1 -Solo -IntervalSeconds 10 -Jump 0.25
 ```
 
-macOS asks for Accessibility permission on the first hop: **System Settings →
-Privacy & Security → Accessibility**, then enable whichever app you launched it
-from.
+## macOS notes
+
+Install with one paste in Terminal. A downloaded `.command` file arrives without
+execute permission and quarantined, so double-clicking it does not work:
+
+```bash
+curl -fsSL https://pvsp2003.github.io/random-mouse-mover/scripts/install_macos.command | bash
+```
+
+That installs a LaunchAgent, so the agent is running after every login and the
+website drives your real cursor with nothing to start.
+
+**Accessibility permission is mandatory.** The agent posts real `mouseMoved`
+events through `CGEventPost`, which macOS refuses unless the process is trusted:
+**System Settings → Privacy & Security → Accessibility**. Grant it to the
+Terminal you ran the installer from. Without it the agent starts and answers
+`/ping` normally, but the cursor never moves — that is the symptom to expect.
+
+Undo:
+
+```bash
+launchctl unload ~/Library/LaunchAgents/com.randommousemover.agent.plist
+rm ~/Library/LaunchAgents/com.randommousemover.agent.plist
+rm -rf "$HOME/Library/Application Support/RandomMouseMover"
+```
+
+**Untested.** Every Windows path in this repo is verified on real hardware. The
+macOS path is written and reviewed but has never been executed — no Mac was
+available. Expect to hit the Accessibility prompt first.
 
 ## Options
 

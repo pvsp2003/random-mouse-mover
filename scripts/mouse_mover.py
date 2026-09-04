@@ -97,16 +97,33 @@ def _backend_macos():
     cg.CGEventCreate.argtypes = [ctypes.c_void_p]
     cg.CGEventGetLocation.restype = CGPoint
     cg.CGEventGetLocation.argtypes = [ctypes.c_void_p]
+    cg.CGEventCreateMouseEvent.restype = ctypes.c_void_p
+    cg.CGEventCreateMouseEvent.argtypes = [
+        ctypes.c_void_p, ctypes.c_uint32, CGPoint, ctypes.c_uint32,
+    ]
+    cg.CGEventPost.argtypes = [ctypes.c_uint32, ctypes.c_void_p]
     cg.CFRelease.argtypes = [ctypes.c_void_p]
 
     display = cg.CGMainDisplayID()
+
+    K_MOUSE_MOVED = 5    # kCGEventMouseMoved
+    K_HID_TAP = 0        # kCGHIDEventTap
 
     def screen_size():
         bounds = cg.CGDisplayBounds(display)
         return int(bounds.size.width), int(bounds.size.height)
 
     def move_to(x, y):
-        cg.CGWarpMouseCursorPosition(CGPoint(float(x), float(y)))
+        # Post a real mouseMoved event rather than only warping the cursor.
+        # A warp repaints the pointer but generates no event, so apps and the
+        # idle timer never see it - the cursor slides and the Mac still sleeps.
+        point = CGPoint(float(x), float(y))
+        event = cg.CGEventCreateMouseEvent(None, K_MOUSE_MOVED, point, 0)
+        if event:
+            cg.CGEventPost(K_HID_TAP, event)
+            cg.CFRelease(event)
+        else:
+            cg.CGWarpMouseCursorPosition(point)
         # Re-associate, otherwise the next physical mouse nudge feels stuck.
         cg.CGAssociateMouseAndMouseCursorPosition(True)
 

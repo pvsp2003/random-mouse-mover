@@ -49,12 +49,19 @@
     </div>
 
     <div class="mac">
-      <a class="dl" href="scripts/install_macos.command" download>Download install_macos.command</a>
       <p class="setup-note">
-        Double-click it (Finder may ask you to allow it the first time — right-click →
-        Open). It installs a LaunchAgent that starts the agent at login. macOS will ask
-        for Accessibility permission the first time the cursor moves.
-        Remove it with <code>launchctl unload ~/Library/LaunchAgents/com.randommousemover.agent.plist</code>.
+        Paste this into Terminal once. A downloaded <code>.command</code> file arrives
+        without execute permission and quarantined, so this is the path that actually works:
+      </p>
+      <div class="cmd-row">
+        <code id="maccmd">curl -fsSL https://pvsp2003.github.io/random-mouse-mover/scripts/install_macos.command | bash</code>
+        <button id="maccopy" class="copy" type="button">Copy</button>
+      </div>
+      <p class="setup-note">
+        It installs a LaunchAgent that starts the agent at every login. macOS will then ask
+        for <strong>Accessibility</strong> permission — you must grant it, or the cursor
+        won't move. Undo with
+        <code>launchctl unload ~/Library/LaunchAgents/com.randommousemover.agent.plist</code>.
       </p>
     </div>
   </section>
