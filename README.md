@@ -1,92 +1,114 @@
 # Random Mouse Mover
 
-One button. The pointer goes somewhere else.
+One button. Your **real** cursor goes somewhere else.
 
 **Live site:** <https://pvsp2003.github.io/random-mouse-mover/>
 
-## What this is
+## How it works
 
-Two halves that do the same thing at different levels:
+A web page cannot move your operating system's cursor. There is no JavaScript
+API for it and browsers block it deliberately — a page that could reposition
+your pointer could make you click things you never meant to click.
 
-| | What it moves | How |
+So the moving is done by a small agent that runs on your own machine, and the
+website's button drives it over localhost:
+
+```
+  browser                          your machine
+┌──────────────────┐            ┌────────────────────────┐
+│  the one button  │  GET /hop  │  mouse_mover agent     │
+│  on the website  │ ─────────► │  127.0.0.1:8777        │
+│                  │ ◄───────── │  moves the real cursor │
+└──────────────────┘   {x, y}   └────────────────────────┘
+```
+
+One file, no dependencies, no installer. It binds to `127.0.0.1` only, so
+nothing outside your machine can reach it.
+
+## Use it
+
+**1. Get the agent** — the site hands you the right file, or take it from
+[`scripts/`](scripts/):
+
+| Your OS | File | Needs |
 |---|---|---|
-| **The web page** | A pointer drawn on the page, with a fading trail | Click the one button |
-| **The scripts** | Your **real** system cursor | Download and run |
+| Windows | [`mouse_mover.ps1`](scripts/mouse_mover.ps1) | nothing — pure PowerShell |
+| macOS | [`mouse_mover.py`](scripts/mouse_mover.py) | `python3` (ships with the Xcode CLT) |
+| Linux | [`mouse_mover.py`](scripts/mouse_mover.py) | `python3`, X11 (or `pip install pyautogui` on Wayland) |
 
-A web page cannot move your operating system's cursor. There's no JavaScript API
-for it and browsers block it deliberately — a page that could reposition your
-pointer could make you click things you never meant to click. (Pointer Lock can
-*hide* the cursor inside a page, but not place it.) So the button on the site
-animates a pointer within the page, and the real mouse-moving lives in
-[`scripts/`](scripts/), which the site hands you as a download for whichever OS
-you're on.
-
-Both halves use the same movement rule: hop to a random point up to **half a
-screen** away in each axis, eased in and out so it looks like a hand did it,
-clamped to the screen edges.
-
-## Running the real thing
-
-### Windows — no installs
+**2. Run it**, from wherever you saved it:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File mouse_mover.ps1
 ```
 
-Uses `System.Windows.Forms.Cursor`, which ships with Windows.
-
-### macOS / Linux — needs `python3`
-
 ```bash
 python3 mouse_mover.py
 ```
 
-On macOS the first run triggers an Accessibility prompt: **System Settings →
-Privacy & Security → Accessibility**, and enable whichever app you launched it
-from (Terminal, iTerm, VS Code…). The script talks to CoreGraphics through
-`ctypes`, so there's nothing to `pip install`.
+**3. Press the button** at <https://pvsp2003.github.io/random-mouse-mover/>.
+Your cursor starts hopping to random points up to half a screen away, eased in
+and out so it looks hand-driven, clamped to the screen edges. Press again to
+stop, or <kbd>Ctrl</kbd>+<kbd>C</kbd> the agent.
 
-`mouse_mover.py` also runs on Windows and on Linux under X11. On Wayland it falls
-back to `pyautogui` if you have it (`pip install pyautogui`).
+## No browser at all
 
-### Options
-
-Both scripts take the same flags:
-
-| Flag | Default | Meaning |
-|---|---|---|
-| `--interval` / `-IntervalSeconds` | `3` | Seconds of rest between hops |
-| `--jump` / `-Jump` | `0.5` | Max hop as a fraction of the screen — `0.5` is half a screen |
-| `--steps` / `-Steps` | `40` | Interpolation steps per hop; higher is smoother |
-| `--once` | — | Python only: hop once and exit |
+`--solo` / `-Solo` skips the website entirely and just hops on a timer:
 
 ```bash
-python3 mouse_mover.py --interval 10 --jump 0.25
+python3 mouse_mover.py --solo --interval 10 --jump 0.25
 ```
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File mouse_mover.ps1 -IntervalSeconds 10 -Jump 0.25
+powershell -ExecutionPolicy Bypass -File mouse_mover.ps1 -Solo -IntervalSeconds 10 -Jump 0.25
 ```
 
-Stop either one with <kbd>Ctrl</kbd>+<kbd>C</kbd>.
+## Options
+
+| Python | PowerShell | Default | Meaning |
+|---|---|---|---|
+| `--port` | `-Port` | `8777` | Agent port |
+| `--jump` | `-Jump` | `0.5` | Max hop as a fraction of the screen — `0.5` is half a screen |
+| `--steps` | `-Steps` | `40` | Interpolation steps per hop; higher is smoother |
+| `--solo` | `-Solo` | off | No browser; hop on a timer |
+| `--interval` | `-IntervalSeconds` | `3` | `--solo` only: seconds between hops |
+| `--once` | — | — | `--solo` only: hop once and exit |
+
+## Browser notes
+
+**Safari** blocks HTTPS pages from talking to `localhost`, so the live site's
+button won't reach the agent there. The agent serves its own copy of the page —
+open <http://127.0.0.1:8777/> instead and it works in any browser, offline.
+
+**Chrome / Edge** send a Private Network Access preflight for
+`https://…` → `127.0.0.1`. The agent answers it with
+`Access-Control-Allow-Private-Network: true`, so this is handled.
+
+**macOS** asks for Accessibility permission on the first hop: **System Settings
+→ Privacy & Security → Accessibility**, then enable whichever app you launched
+the agent from (Terminal, iTerm, VS Code…).
+
+## Agent API
+
+| | |
+|---|---|
+| `GET /ping` | `{"ok":true,"os":"Windows","screen":[1536,864]}` |
+| `GET /hop` | one eased hop; returns `{"x","y","from","distance","screen"}` when it lands |
+| `GET /` | a self-contained copy of the page, same-origin |
 
 ## Files
 
 ```
 index.html            the page
 style.css             styles
-app.js                the in-page pointer + OS detection + download
+app.js                talks to the agent; shows setup steps only when it's missing
 scripts/
-  mouse_mover.ps1     Windows, dependency-free
-  mouse_mover.py      macOS / Linux / Windows, dependency-free on macOS and Windows
+  mouse_mover.ps1     Windows agent, dependency-free
+  mouse_mover.py      macOS / Linux / Windows agent, dependency-free on macOS and Windows
 ```
 
 ## Local preview
 
 ```bash
-python3 -m http.server 8000   # or: npx serve
+python3 -m http.server 8000   # then open http://localhost:8000
 ```
-
-Then open <http://localhost:8000>. Opening `index.html` straight off disk works
-too, but `file://` blocks `fetch`, so the download button falls back to opening
-the script in a new tab.
