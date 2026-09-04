@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Random Mouse Mover</title>
-<meta name="description" content="One button. Fullscreen, your cursor hidden, the pointer moving on its own.">
+<meta name="description" content="One button that moves your real mouse cursor. macOS and Windows.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖱️</text></svg>">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -13,24 +13,59 @@
 <main id="home">
   <header>
     <h1>Random Mouse Mover</h1>
-    <p class="sub">One button. Fullscreen, your cursor hidden, the pointer moving on its own.</p>
+    <p class="sub">One button. Your cursor goes somewhere else.</p>
   </header>
 
   <button id="go" class="go" type="button">
     <span class="go-label">Move the mouse</span>
-    <span class="go-hint">goes fullscreen · Esc to exit</span>
+    <span class="go-hint">checking…</span>
   </button>
 
   <p id="status" class="status" role="status">&nbsp;</p>
+  <span id="mode" class="mode">checking…</span>
+
+  <!-- Hidden once the agent is installed. Never shown again after that. -->
+  <section id="setup" class="setup" hidden>
+    <h2>Want it to move your <em>real</em> cursor?</h2>
+    <p class="setup-lead">
+      Right now the button runs a fullscreen demo: it hides your cursor and flies a drawn
+      pointer around. That's the most a web page is allowed to do — browsers block pages
+      from touching the OS pointer, so that a site can't park your cursor over “Allow”
+      and click it for you.
+    </p>
+    <p class="setup-lead">
+      To move the actual cursor, set it up <strong>once</strong>. After that this page
+      moves your real mouse every time you open it, forever, with nothing to run.
+    </p>
+
+    <div class="win">
+      <a class="dl" href="scripts/install.cmd" download>Download install.cmd</a>
+      <p class="setup-note">
+        Double-click it. It installs the agent to your user folder, starts it now, and
+        starts it again at every login. Takes about five seconds.
+        <a href="scripts/uninstall.cmd" download>uninstall.cmd</a> removes everything —
+        no registry keys, no services, no admin rights.
+      </p>
+    </div>
+
+    <div class="mac">
+      <a class="dl" href="scripts/install_macos.command" download>Download install_macos.command</a>
+      <p class="setup-note">
+        Double-click it (Finder may ask you to allow it the first time — right-click →
+        Open). It installs a LaunchAgent that starts the agent at login. macOS will ask
+        for Accessibility permission the first time the cursor moves.
+        Remove it with <code>launchctl unload ~/Library/LaunchAgents/com.randommousemover.agent.plist</code>.
+      </p>
+    </div>
+  </section>
 
   <footer>
     <span id="hops">0 hops</span>
     <a href="https://github.com/pvsp2003/random-mouse-mover" rel="noopener">source</a>
-    <button id="real" class="linkish" type="button">move the OS cursor instead</button>
   </footer>
 </main>
 
-<!-- Fullscreen stage. The real cursor is hidden here; the drawn one is all you see. -->
+<!-- Fullscreen demo stage. The real cursor is hidden here. -->
 <div id="stage" hidden>
   <canvas id="trail"></canvas>
   <svg id="ptr" viewBox="0 0 24 24" width="36" height="36" aria-hidden="true">
@@ -39,31 +74,6 @@
   </svg>
   <div id="esc">Esc to exit</div>
 </div>
-
-<!-- Only opened from the footer link, for anyone who wants the actual OS pointer. -->
-<dialog id="osdlg">
-  <h2>Moving the real OS cursor</h2>
-  <p>
-    No website can move your operating system's pointer — every browser blocks it, because
-    a page that could reposition your cursor could park it over “Allow” and make you click
-    things you never meant to. What this page does instead is take over the whole screen and
-    hide your cursor, so the pointer you see is the one it controls.
-  </p>
-  <p>
-    If you want the actual OS cursor moved, that has to run outside the browser. One file,
-    no dependencies:
-  </p>
-  <ul>
-    <li><a href="scripts/mouse_mover.ps1" download><code>mouse_mover.ps1</code></a> — Windows.
-      Double-click, or <code>powershell -ExecutionPolicy Bypass -File mouse_mover.ps1</code></li>
-    <li><a href="scripts/mouse_mover.py" download><code>mouse_mover.py</code></a> — macOS &amp; Linux.
-      <code>python3 mouse_mover.py</code></li>
-  </ul>
-  <p class="fineprint">
-    Add <code>--solo</code> / <code>-Solo</code> and it just runs on a timer with no browser at all.
-  </p>
-  <form method="dialog"><button class="close" type="submit">Close</button></form>
-</dialog>
 
 <script src="app.js"></script>
 </body>

@@ -1,0 +1,95 @@
+<#
+  Random Mouse Mover - one-time setup.
+
+  Puts the agent in %LOCALAPPDATA%\RandomMouseMover, registers it to start
+  silently at login, and starts it now. After this the website moves your real
+  cursor on every visit, with nothing to run.
+
+  Undo it with uninstall.cmd, or by deleting the shortcut from
+  shell:startup and the folder above. Nothing goes in the registry, nothing
+  needs administrator rights, nothing runs as a service.
+#>
+param(
+    [switch]$NoStartup,   # install and launch, but don't register at login (for testing)
+    [switch]$Quiet
+)
+
+$ErrorActionPreference = 'Stop'
+
+$Source  = 'https://pvsp2003.github.io/random-mouse-mover/scripts/mouse_mover.ps1'
+$Home_   = Join-Path $env:LOCALAPPDATA 'RandomMouseMover'
+$Agent   = Join-Path $Home_ 'mouse_mover.ps1'
+$Vbs     = Join-Path $Home_ 'start_hidden.vbs'
+$Startup = [Environment]::GetFolderPath('Startup')
+$Link    = Join-Path $Startup 'RandomMouseMover.vbs'
+
+function Say($text, $colour = 'Gray') {
+    if (-not $Quiet) { Write-Host $text -ForegroundColor $colour }
+}
+
+Say ""
+Say "Random Mouse Mover - one-time setup" 'Cyan'
+Say ""
+
+# 1. Somewhere stable to live -------------------------------------------------
+New-Item -ItemType Directory -Force -Path $Home_ | Out-Null
+Say "  folder    $Home_"
+
+# 2. The agent itself. Prefer a copy sitting next to this script, so the
+#    installer works offline from a clone; otherwise pull it from the site.
+$Local = Join-Path $PSScriptRoot 'mouse_mover.ps1'
+if (Test-Path $Local) {
+    Copy-Item $Local $Agent -Force
+    Say "  agent     copied from $Local"
+} else {
+    Invoke-WebRequest $Source -OutFile $Agent -UseBasicParsing
+    Say "  agent     downloaded from the site"
+}
+
+# 3. A launcher that starts it with no console window at all.
+#    WScript.Shell's Run with intWindowStyle 0 is the only way to get a truly
+#    hidden PowerShell process; -WindowStyle Hidden still flashes a console.
+$agentEscaped = $Agent -replace '"', '""'
+@(
+    'Set s = CreateObject("WScript.Shell")'
+    's.Run "powershell -ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -File ""' +
+        $agentEscaped + '"" -NoOpen", 0, False'
+) | Set-Content -Path $Vbs -Encoding ASCII
+Say "  launcher  $Vbs"
+
+# 4. Start at login ------------------------------------------------------------
+if ($NoStartup) {
+    Say "  startup   skipped (-NoStartup)" 'Yellow'
+} else {
+    Copy-Item $Vbs $Link -Force
+    Say "  startup   $Link"
+}
+
+# 5. Stop any copy already running, then start this one ------------------------
+Get-NetTCPConnection -LocalPort 8777 -State Listen -ErrorAction SilentlyContinue |
+    ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
+Start-Sleep -Milliseconds 600
+
+Start-Process wscript.exe -ArgumentList "`"$Vbs`"" -WindowStyle Hidden
+Start-Sleep -Seconds 3
+
+# 6. Prove it works ------------------------------------------------------------
+try {
+    $ping = (Invoke-WebRequest 'http://127.0.0.1:8777/ping' -UseBasicParsing -TimeoutSec 6).Content
+    Say ""
+    Say "  running   $ping" 'Green'
+    Say ""
+    Say "Done. Open https://pvsp2003.github.io/random-mouse-mover/ and press the button." 'Green'
+    if (-not $NoStartup) {
+        Say "It will be running again automatically after every restart."
+    }
+    exit 0
+} catch {
+    Say ""
+    Say "  The agent did not answer on port 8777." 'Red'
+    Say "  $($_.Exception.Message)"
+    Say ""
+    Say "  Try running the agent directly to see the error:"
+    Say "    powershell -ExecutionPolicy Bypass -File `"$Agent`""
+    exit 1
+}
