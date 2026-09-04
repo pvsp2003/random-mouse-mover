@@ -1,64 +1,48 @@
 # Random Mouse Mover
 
-One button. Your **real** cursor goes somewhere else.
+One button. Fullscreen, your cursor hidden, the pointer moving on its own.
 
 **Live site:** <https://pvsp2003.github.io/random-mouse-mover/>
 
-## How it works
+No install, no download, no terminal. Open it, press the button.
 
-A web page cannot move your operating system's cursor. There is no JavaScript
-API for it and browsers block it deliberately — a page that could reposition
-your pointer could make you click things you never meant to click.
+## What the website does
 
-So the moving is done by a small agent that runs on your own machine, and the
-website's button drives it over localhost:
+It goes fullscreen, hides your real cursor with `cursor: none` plus Pointer
+Lock, and flies a drawn pointer around the screen in random hops of up to half
+a screen — eased in and out so it looks hand-driven, trailing a line that fades
+behind it. Esc, or any click or key, gets you out.
 
-```
-  browser                          your machine
-┌──────────────────┐            ┌────────────────────────┐
-│  the one button  │  GET /hop  │  mouse_mover agent     │
-│  on the website  │ ─────────► │  127.0.0.1:8777        │
-│                  │ ◄───────── │  moves the real cursor │
-└──────────────────┘   {x, y}   └────────────────────────┘
-```
+## Why it can't move the OS cursor
 
-One file, no dependencies, no installer. It binds to `127.0.0.1` only, so
-nothing outside your machine can reach it.
+It can't, and neither can any other website.
 
-## Use it
+There is no browser API for repositioning the operating system's pointer — not
+in JavaScript, not in WebAssembly, not in anything that compiles to either. The
+language is not the constraint; the sandbox is. It's blocked deliberately and
+universally, because a page that could move your cursor could park it over
+"Allow" and make you click things you never meant to click.
 
-**1. Get the agent** — the site hands you the right file, or take it from
-[`scripts/`](scripts/):
+Hiding the real cursor and owning the whole screen is as close as a web page
+gets. Anything that genuinely moves the OS pointer has to run outside the
+browser — which is what [`scripts/`](scripts/) is for.
 
-| Your OS | File | Needs |
+## Moving the actual OS cursor (optional, outside the browser)
+
+One file, no dependencies:
+
+| Your OS | File | Run it |
 |---|---|---|
-| Windows | [`mouse_mover.ps1`](scripts/mouse_mover.ps1) | nothing — pure PowerShell |
-| macOS | [`mouse_mover.py`](scripts/mouse_mover.py) | `python3` (ships with the Xcode CLT) |
-| Linux | [`mouse_mover.py`](scripts/mouse_mover.py) | `python3`, X11 (or `pip install pyautogui` on Wayland) |
+| Windows | [`mouse_mover.ps1`](scripts/mouse_mover.ps1) | double-click [`start_agent.cmd`](scripts/start_agent.cmd), or `powershell -ExecutionPolicy Bypass -File mouse_mover.ps1` |
+| macOS | [`mouse_mover.py`](scripts/mouse_mover.py) | `python3 mouse_mover.py` |
+| Linux | [`mouse_mover.py`](scripts/mouse_mover.py) | `python3 mouse_mover.py` |
 
-**2. Run it**, from wherever you saved it:
+Two modes:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File mouse_mover.ps1
-```
-
-```bash
-python3 mouse_mover.py
-```
-
-On Windows you can also just double-click [`start_agent.cmd`](scripts/start_agent.cmd)
-if it sits next to `mouse_mover.ps1`.
-
-**3. Press the button.** The agent opens its own page at <http://127.0.0.1:8777/>
-when it starts; the live site at <https://pvsp2003.github.io/random-mouse-mover/>
-works too.
-Your cursor starts hopping to random points up to half a screen away, eased in
-and out so it looks hand-driven, clamped to the screen edges. Press again to
-stop, or <kbd>Ctrl</kbd>+<kbd>C</kbd> the agent.
-
-## No browser at all
-
-`--solo` / `-Solo` skips the website entirely and just hops on a timer:
+- **Plain** — starts a localhost agent on port 8777 and opens its own page with
+  the same one button. That page *can* drive your real cursor, because the
+  agent serves it rather than a website.
+- **`--solo` / `-Solo`** — no browser at all, just hops on a timer.
 
 ```bash
 python3 mouse_mover.py --solo --interval 10 --jump 0.25
@@ -68,6 +52,10 @@ python3 mouse_mover.py --solo --interval 10 --jump 0.25
 powershell -ExecutionPolicy Bypass -File mouse_mover.ps1 -Solo -IntervalSeconds 10 -Jump 0.25
 ```
 
+macOS asks for Accessibility permission on the first hop: **System Settings →
+Privacy & Security → Accessibility**, then enable whichever app you launched it
+from.
+
 ## Options
 
 | Python | PowerShell | Default | Meaning |
@@ -76,25 +64,9 @@ powershell -ExecutionPolicy Bypass -File mouse_mover.ps1 -Solo -IntervalSeconds 
 | `--jump` | `-Jump` | `0.5` | Max hop as a fraction of the screen — `0.5` is half a screen |
 | `--steps` | `-Steps` | `40` | Interpolation steps per hop; higher is smoother |
 | `--solo` | `-Solo` | off | No browser; hop on a timer |
-| `--no-open` | `-NoOpen` | off | Do not auto-open the local page on start |
+| `--no-open` | `-NoOpen` | off | Don't auto-open the local page on start |
 | `--interval` | `-IntervalSeconds` | `3` | `--solo` only: seconds between hops |
 | `--once` | — | — | `--solo` only: hop once and exit |
-
-## Browser notes
-
-**If the live site's button does nothing** while the agent is running, your browser
-is refusing to let an HTTPS page reach `localhost` — Safari always does this, and
-Chrome/Edge increasingly gate it behind a permission. The agent serves its own
-copy of the page for exactly this reason: open <http://127.0.0.1:8777/> and the
-same button works in any browser, offline.
-
-**Chrome / Edge** send a Private Network Access preflight for
-`https://…` → `127.0.0.1`. The agent answers it with
-`Access-Control-Allow-Private-Network: true`, so this is handled.
-
-**macOS** asks for Accessibility permission on the first hop: **System Settings
-→ Privacy & Security → Accessibility**, then enable whichever app you launched
-the agent from (Terminal, iTerm, VS Code…).
 
 ## Agent API
 
@@ -109,7 +81,7 @@ the agent from (Terminal, iTerm, VS Code…).
 ```
 index.html            the page
 style.css             styles
-app.js                talks to the agent; shows setup steps only when it's missing
+app.js                fullscreen, hides the cursor, flies the pointer
 scripts/
   mouse_mover.ps1     Windows agent, dependency-free
   mouse_mover.py      macOS / Linux / Windows agent, dependency-free on macOS and Windows
